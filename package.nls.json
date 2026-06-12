@@ -1,0 +1,7 @@
+{
+  "githubCopilotModelAdvisor.container.title": "Model Advisor",
+  "githubCopilotModelAdvisor.view.name": "Copilot Model Advisor",
+  "githubCopilotModelAdvisor.command.open": "GitHubCopilotModelAdvisor: Open Advisor",
+  "githubCopilotModelAdvisor.command.checkNow": "GitHubCopilotModelAdvisor: Check Models Now",
+  "githubCopilotModelAdvisor.command.openSettings": "GitHubCopilotModelAdvisor: Open Settings"
+}
