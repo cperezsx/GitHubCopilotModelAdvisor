@@ -1,8 +1,8 @@
 {
   "name": "githubcopilotmodeladvisor",
   "displayName": "GitHubCopilotModelAdvisor",
-  "description": "A VS Code sidebar advisor that ranks available GitHub Copilot models by latency and provider health.",
-  "version": "0.0.1",
+  "description": "A VS Code sidebar advisor that ranks enabled GitHub Copilot models by health, latency, and task fit.",
+  "version": "1.0.0",
   "publisher": "cperezsx",
   "author": {
     "name": "Carlos Perez",
@@ -15,7 +15,7 @@
     }
   ],
   "license": "MIT",
-  "preview": true,
+  "preview": false,
   "pricing": "Free",
   "repository": {
     "type": "git",
@@ -52,6 +52,7 @@
     "onView:githubCopilotModelAdvisor.panel",
     "onCommand:githubCopilotModelAdvisor.open",
     "onCommand:githubCopilotModelAdvisor.checkNow",
+    "onCommand:githubCopilotModelAdvisor.benchmarkNow",
     "onCommand:githubCopilotModelAdvisor.openSettings"
   ],
   "main": "./out/extension.js",
@@ -96,6 +97,11 @@
         "icon": "$(pulse)"
       },
       {
+        "command": "githubCopilotModelAdvisor.benchmarkNow",
+        "title": "%githubCopilotModelAdvisor.command.benchmarkNow%",
+        "icon": "$(watch)"
+      },
+      {
         "command": "githubCopilotModelAdvisor.openSettings",
         "title": "%githubCopilotModelAdvisor.command.openSettings%",
         "icon": "$(settings-gear)"
@@ -117,9 +123,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "githubCopilotModelAdvisor.openSettings",
+          "command": "githubCopilotModelAdvisor.benchmarkNow",
           "when": "view == githubCopilotModelAdvisor.panel",
           "group": "navigation@2"
+        },
+        {
+          "command": "githubCopilotModelAdvisor.openSettings",
+          "when": "view == githubCopilotModelAdvisor.panel",
+          "group": "navigation@3"
         }
       ]
     },
@@ -129,7 +140,7 @@
         "githubCopilotModelAdvisor.autoCheckOnStartup": {
           "type": "boolean",
           "default": false,
-          "description": "Run a model advisor check when VS Code starts."
+          "description": "Run a token-free model health check when VS Code starts."
         },
         "githubCopilotModelAdvisor.showInStatusBar": {
           "type": "boolean",
@@ -139,7 +150,7 @@
         "githubCopilotModelAdvisor.testPrompt": {
           "type": "string",
           "default": "hi",
-          "description": "Tiny prompt used to measure model time to first token."
+          "description": "Tiny prompt used only for explicit latency benchmarks."
         }
       }
     }

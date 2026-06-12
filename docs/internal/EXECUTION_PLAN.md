@@ -11,7 +11,7 @@
 ## Phase 2: Real Advisor Pipeline
 
 - Implement `modelDetector.ts` with `vscode.lm.selectChatModels`.
-- Implement `latencyTester.ts` with first-token timing and cancellation.
+- Implement `latencyTester.ts` with explicit first-token timing and cancellation.
 - Implement `statusChecker.ts` with public status endpoints.
 - Implement `advisor.ts` scoring and recommendation.
 - Send results to the webview and output channel.
@@ -20,7 +20,7 @@
 
 - Add loading, empty, error, and partial-data states.
 - Add compact provider status section.
-- Add settings link and token disclosure.
+- Add settings link, token-free health check disclosure, and explicit benchmark disclosure.
 - Add keyboard and screen-reader labels.
 - Validate dark and light themes.
 
@@ -34,7 +34,7 @@
 
 ## Phase 5: Post-v1
 
-- Optional Gemini status parser.
+- Improve Google/Gemini product-impact parsing.
 - Optional model history and trend view.
 - Optional recommendations by task type.
 - Optional exportable diagnostic snapshot.

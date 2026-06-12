@@ -26,5 +26,6 @@
 - Open Extension Development Host.
 - Confirm Activity Bar icon appears.
 - Confirm sidebar webview renders in dark and light themes.
-- Confirm `Check Models Now` handles missing Copilot gracefully.
+- Confirm `Check Health Now` handles missing Copilot gracefully.
+- Confirm `Benchmark Latency` asks for token-use confirmation before sending prompts.
 - Confirm status bar item updates during and after a check.

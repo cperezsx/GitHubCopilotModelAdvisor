@@ -1,6 +1,30 @@
-node_modules/
+# Build output
 out/
+dist/
 *.vsix
+
+# Dependencies
+node_modules/
+
+# Test / coverage
 .vscode-test/
-.DS_Store
+coverage/
+
+# Editor & local tooling
+.vscode/
+.idea/
+.alpackages/
+.snapshots/
+.claude/
+
+# Environment & secrets
+.env
+.env.*
+
+# Logs
 npm-debug.log*
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

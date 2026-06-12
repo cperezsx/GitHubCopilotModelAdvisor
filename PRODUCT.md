@@ -10,7 +10,7 @@ Developers using GitHub Copilot Chat in VS Code who need to choose a model quick
 
 ## Product Purpose
 
-GitHubCopilotModelAdvisor turns model selection into a quick operational signal. It detects Copilot models available to the user, measures first-token latency, checks public provider health, and recommends the best current option with minimal interaction.
+GitHubCopilotModelAdvisor turns model selection into a quick operational signal. It detects Copilot models available to the user, checks public model-provider and GitHub Copilot service health without sending prompts, optionally measures first-token latency on explicit request, and recommends the best current option with minimal interaction.
 
 Success means the user can open the sidebar, run a check, and know which model to use in a few seconds.
 
@@ -27,7 +27,7 @@ Avoid marketing-heavy dashboards, decorative AI sparkle overload, noisy charts, 
 ## Design Principles
 
 1. Recommendation first, details second.
-2. No hidden cost: clearly disclose that checks use a few Copilot tokens per model.
+2. No hidden cost: default checks use no Copilot tokens, and benchmarks disclose their token use before they run.
 3. Treat uncertainty as data, not failure.
 4. Fit the VS Code surface instead of fighting it.
 5. Make the fastest path the obvious path.

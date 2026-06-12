@@ -1,7 +1,8 @@
 {
   "githubCopilotModelAdvisor.container.title": "Model Advisor",
-  "githubCopilotModelAdvisor.view.name": "Copilot Model Advisor",
+  "githubCopilotModelAdvisor.view.name": "GitHub Copilot Model Advisor",
   "githubCopilotModelAdvisor.command.open": "GitHubCopilotModelAdvisor: Open Advisor",
-  "githubCopilotModelAdvisor.command.checkNow": "GitHubCopilotModelAdvisor: Check Models Now",
+  "githubCopilotModelAdvisor.command.checkNow": "GitHubCopilotModelAdvisor: Check Health Now",
+  "githubCopilotModelAdvisor.command.benchmarkNow": "GitHubCopilotModelAdvisor: Benchmark Latency (Uses GitHub Copilot Tokens)",
   "githubCopilotModelAdvisor.command.openSettings": "GitHubCopilotModelAdvisor: Open Settings"
 }

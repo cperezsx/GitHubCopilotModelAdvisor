@@ -1,15 +1,20 @@
 import * as https from "https";
-import { Provider, ProviderStatusLevel, StatusResult } from "./types";
+import { Provider, ProviderStatusLevel, ServiceProvider, StatusResult } from "./types";
 
-const STATUS_URLS: Partial<Record<Provider, string>> = {
+const STATUS_URLS: Partial<Record<ServiceProvider, string>> = {
   openai: "https://status.openai.com/api/v2/summary.json",
-  anthropic: "https://status.anthropic.com/api/v2/summary.json",
-  github: "https://www.githubstatus.com/api/v2/summary.json"
+  anthropic: "https://status.claude.com/api/v2/summary.json",
+  google: "https://status.cloud.google.com/incidents.json",
+  "github-copilot": "https://www.githubstatus.com/api/v2/summary.json"
 };
 
-export async function checkProviderStatus(provider: Provider): Promise<StatusResult> {
+export async function checkProviderStatus(provider: ServiceProvider): Promise<StatusResult> {
   if (provider === "google") {
-    return unknownStatus(provider, "Google status parsing is out of scope for v1.");
+    return checkGoogleStatus();
+  }
+
+  if (provider === "unknown") {
+    return unknownStatus(provider);
   }
 
   const url = STATUS_URLS[provider];
@@ -34,6 +39,7 @@ export async function checkProviderStatus(provider: Provider): Promise<StatusRes
       provider,
       status: worstStatus([componentStatus, pageStatus]),
       incidents,
+      statusPageUrl: statusPageUrl(provider),
       checkedAt: Date.now()
     };
   } catch {
@@ -41,10 +47,23 @@ export async function checkProviderStatus(provider: Provider): Promise<StatusRes
   }
 }
 
-function getJson<T>(url: string, timeoutMs: number): Promise<T> {
+function getJson<T>(url: string, timeoutMs: number, redirectsLeft = 3): Promise<T> {
   return new Promise((resolve, reject) => {
     const request = https.get(url, { timeout: timeoutMs }, (response) => {
       let body = "";
+
+      if (
+        response.statusCode &&
+        response.statusCode >= 300 &&
+        response.statusCode < 400 &&
+        response.headers.location &&
+        redirectsLeft > 0
+      ) {
+        response.resume();
+        const nextUrl = new URL(response.headers.location, url).toString();
+        getJson<T>(nextUrl, timeoutMs, redirectsLeft - 1).then(resolve, reject);
+        return;
+      }
 
       response.setEncoding("utf8");
       response.on("data", (chunk) => {
@@ -66,7 +85,37 @@ function getJson<T>(url: string, timeoutMs: number): Promise<T> {
   });
 }
 
-function isRelevantComponent(provider: Provider, name: string): boolean {
+async function checkGoogleStatus(): Promise<StatusResult> {
+  const url = STATUS_URLS.google;
+
+  if (!url) {
+    return unknownStatus("google");
+  }
+
+  try {
+    const incidents = await getJson<GoogleIncident[]>(url, 5000);
+    const activeRelevantIncidents = incidents.filter((incident) => {
+      if (incident.end || incident.status_impact === "SERVICE_INFORMATION") {
+        return false;
+      }
+
+      const text = `${incident.service_name ?? ""} ${incident.external_desc ?? ""} ${JSON.stringify(incident.affected_products ?? [])}`.toLowerCase();
+      return text.includes("gemini") || text.includes("vertex ai") || text.includes("generative ai");
+    });
+
+    return {
+      provider: "google",
+      status: worstStatus(activeRelevantIncidents.map((incident) => googleImpactToStatus(incident.status_impact))),
+      incidents: activeRelevantIncidents.map((incident) => incident.external_desc || incident.service_name || "Google Cloud incident"),
+      statusPageUrl: statusPageUrl("google"),
+      checkedAt: Date.now()
+    };
+  } catch {
+    return unknownStatus("google");
+  }
+}
+
+function isRelevantComponent(provider: ServiceProvider, name: string): boolean {
   const normalized = name.toLowerCase();
 
   if (provider === "openai") {
@@ -77,8 +126,8 @@ function isRelevantComponent(provider: Provider, name: string): boolean {
     return normalized.includes("api") || normalized.includes("claude");
   }
 
-  if (provider === "github") {
-    return normalized.includes("copilot") || normalized.includes("actions");
+  if (provider === "github-copilot") {
+    return normalized.includes("copilot");
   }
 
   return false;
@@ -113,13 +162,42 @@ function worstStatus(statuses: ProviderStatusLevel[]): ProviderStatusLevel {
   }, "operational");
 }
 
-function unknownStatus(provider: Provider, incident?: string): StatusResult {
+function unknownStatus(provider: ServiceProvider, incident?: string): StatusResult {
   return {
     provider,
     status: "unknown",
     incidents: incident ? [incident] : [],
+    statusPageUrl: statusPageUrl(provider),
     checkedAt: Date.now()
   };
+}
+
+function statusPageUrl(provider: ServiceProvider): string {
+  switch (provider) {
+    case "openai":
+      return "https://status.openai.com/";
+    case "anthropic":
+      return "https://status.claude.com/";
+    case "google":
+      return "https://status.cloud.google.com/";
+    case "github-copilot":
+      return "https://www.githubstatus.com/";
+    case "unknown":
+      return "https://www.githubstatus.com/";
+  }
+}
+
+function googleImpactToStatus(impact: string): ProviderStatusLevel {
+  switch (impact) {
+    case "SERVICE_OUTAGE":
+      return "major_outage";
+    case "SERVICE_DISRUPTION":
+      return "partial_outage";
+    case "SERVICE_INFORMATION":
+      return "degraded_performance";
+    default:
+      return "unknown";
+  }
 }
 
 type StatuspageSummary = {
@@ -134,4 +212,12 @@ type StatuspageSummary = {
     name: string;
     resolved_at: string | null;
   }>;
+};
+
+type GoogleIncident = {
+  service_name?: string;
+  status_impact: string;
+  external_desc?: string;
+  end?: string;
+  affected_products?: unknown[];
 };
