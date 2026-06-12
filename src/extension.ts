@@ -7,6 +7,7 @@ import { AdvisorWebviewViewProvider } from "./webviewViewProvider";
 import { LatencyResult, ModelInfo, Provider, ServiceProvider, StatusResult } from "./types";
 
 let statusBarItem: vscode.StatusBarItem;
+let lastResult: ReturnType<typeof buildAdvisorResult> | null = null;
 type CheckMode = "healthOnly" | "benchmark";
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -103,6 +104,7 @@ async function runCheck(
       collectStatuses(providers)
     ]);
     const result = buildAdvisorResult(models, latencies, statuses, mode);
+    lastResult = result;
 
     provider.setResult(result);
     writeOutput(output, result);
@@ -168,10 +170,11 @@ async function runSelectedBenchmark(
 
     const providers = serviceProvidersForModels(models);
     const [latencies, statuses] = await Promise.all([
-      collectSelectedLatency(models, selectedModel, prompt),
+      collectSelectedLatency(models, selectedModel, prompt, lastResult?.models),
       collectStatuses(providers)
     ]);
     const result = buildAdvisorResult(models, latencies, statuses, "selectedBenchmark", selectedModel.id);
+    lastResult = result;
 
     provider.setResult(result);
     writeOutput(output, result);
@@ -234,9 +237,25 @@ async function collectSkippedLatencies(models: Array<{ id: string }>): Promise<M
 async function collectSelectedLatency(
   models: ModelInfo[],
   selectedModel: ModelInfo,
-  prompt: string
+  prompt: string,
+  previousModels?: ReturnType<typeof buildAdvisorResult>["models"]
 ): Promise<Map<string, LatencyResult>> {
-  const results = await collectSkippedLatencies(models);
+  const results = new Map<string, LatencyResult>();
+
+  for (const model of models) {
+    if (model.id === selectedModel.id) {
+      continue;
+    }
+
+    const previous = previousModels?.find((m) => m.model.id === model.id);
+    results.set(
+      model.id,
+      previous && previous.latency.status !== "skipped"
+        ? previous.latency
+        : { status: "skipped", latency: null, reason: "Not included in this benchmark run." }
+    );
+  }
+
   results.set(selectedModel.id, await testModelLatency(selectedModel, prompt));
   return results;
 }
