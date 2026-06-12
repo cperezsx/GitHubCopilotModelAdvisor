@@ -2,7 +2,7 @@
 
 > Know which GitHub Copilot Chat model to use right now, without leaving VS Code.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-68f0a7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.1-68f0a7)](CHANGELOG.md)
 [![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.92-65d8e9)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-f3bb58)](LICENSE)
 
