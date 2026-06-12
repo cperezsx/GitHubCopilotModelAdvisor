@@ -1,0 +1,11 @@
+.git/**
+.github/**
+.gitignore
+src/**
+docs/**
+node_modules/**
+**/*.map
+tsconfig.json
+PRODUCT.md
+DESIGN.md
+npm-debug.log*

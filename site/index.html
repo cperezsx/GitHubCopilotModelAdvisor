@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Copilot Model Advisor — Pick the right model, instantly</title>
+<meta name="description" content="A VS Code extension that ranks your enabled GitHub Copilot models by provider health, latency, and task fit — without spending GitHub Copilot tokens.">
+<meta property="og:title" content="GitHub Copilot Model Advisor">
+<meta property="og:description" content="Pick the best GitHub Copilot Chat model for the moment you are working in, inside VS Code.">
+<meta property="og:image" content="https://cperezsx.github.io/GitHubCopilotModelAdvisor/assets/hero.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a08;
+    --bg-raised: #0a120f;
+    --bg-card: #0d1613;
+    --line: #1c2a24;
+    --line-soft: #14201b;
+    --text: #e8f2ed;
+    --text-dim: #93a89e;
+    --text-faint: #5f7269;
+    --mint: #68f0a7;
+    --mint-dim: #3fae74;
+    --cyan: #65d8e9;
+    --amber: #f3bb58;
+    --red: #f37c6c;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--mint); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Nav ---------- */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(5, 10, 8, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text); font-weight: 600; font-size: 0.95rem;
+  }
+  .brand:hover { text-decoration: none; }
+  .brand img { width: 26px; height: 26px; border-radius: 6px; }
+  .nav-links { display: flex; gap: 26px; align-items: center; }
+  .nav-links a { color: var(--text-dim); font-size: 0.875rem; }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+  .nav-links .gh { color: var(--text); }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 88px 0 40px; text-align: center; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 0.75rem;
+    color: var(--mint); border: 1px solid var(--line);
+    background: var(--bg-raised);
+    padding: 5px 14px; border-radius: 999px;
+    margin-bottom: 28px;
+  }
+  .badge .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--mint);
+    box-shadow: 0 0 8px rgba(104, 240, 167, 0.7);
+  }
+  h1 {
+    font-size: clamp(2rem, 5.2vw, 3.4rem);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    max-width: 740px;
+    margin: 0 auto 20px;
+  }
+  h1 em { font-style: normal; color: var(--mint); }
+  .sub {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto 36px;
+  }
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 64px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-weight: 600; font-size: 0.95rem;
+    padding: 12px 24px; border-radius: 8px;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn-primary { background: var(--mint); color: #04130b; }
+  .btn-primary:hover { background: #7ef5b4; }
+  .btn-ghost { color: var(--text); border: 1px solid var(--line); background: var(--bg-raised); }
+  .btn-ghost:hover { border-color: var(--mint-dim); }
+
+  .hero-img {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  }
+  .hero-img img { display: block; width: 100%; height: auto; }
+
+  /* ---------- Sections ---------- */
+  section { padding: 88px 0 0; }
+  .kicker {
+    font-family: var(--mono); font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--mint-dim); margin-bottom: 12px;
+  }
+  h2 {
+    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    font-weight: 700; letter-spacing: -0.02em;
+    margin-bottom: 14px;
+  }
+  .lede { color: var(--text-dim); max-width: 620px; margin-bottom: 44px; }
+
+  /* Features: asymmetric grid */
+  .features {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    padding: 28px;
+  }
+  .card h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 8px; }
+  .card p { color: var(--text-dim); font-size: 0.92rem; }
+  .card .tag {
+    font-family: var(--mono); font-size: 0.7rem;
+    color: var(--mint); margin-bottom: 14px; display: block;
+  }
+  .card.wide { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
+
+  /* real webview capture, cropped to the top of the sidebar */
+  .webview-shot {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 460px;
+    background: #181818;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  }
+  .webview-shot img { display: block; width: 100%; height: auto; }
+
+  /* How it works steps */
+  .steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; counter-reset: step; }
+  .step {
+    background: var(--bg-card);
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    padding: 26px;
+    position: relative;
+  }
+  .step::before {
+    counter-increment: step;
+    content: "0" counter(step);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--mint-dim);
+    display: block;
+    margin-bottom: 12px;
+  }
+  .step h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+  .step p { color: var(--text-dim); font-size: 0.9rem; }
+  .step code, .card code, .lede code, td code {
+    font-family: var(--mono); font-size: 0.85em;
+    background: var(--bg-raised);
+    border: 1px solid var(--line-soft);
+    border-radius: 5px; padding: 1px 6px;
+    color: var(--cyan);
+  }
+
+  /* Token callout */
+  .token-note {
+    margin-top: 16px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--mint);
+    border-radius: 10px;
+    background: var(--bg-raised);
+    padding: 22px 26px;
+    color: var(--text-dim);
+    font-size: 0.92rem;
+  }
+  .token-note strong { color: var(--text); }
+
+  /* Status sources table */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); }
+  th { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
+  td { color: var(--text-dim); }
+  td:first-child { color: var(--text); font-weight: 500; }
+  .table-card { background: var(--bg-card); border: 1px solid var(--line-soft); border-radius: 12px; overflow: hidden; }
+
+  /* Install */
+  .install-box {
+    background: var(--bg-card);
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    padding: 36px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+  }
+  .install-box p { color: var(--text-dim); font-size: 0.95rem; max-width: 480px; }
+  .kbd {
+    font-family: var(--mono); font-size: 0.8em;
+    border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 5px; padding: 2px 7px;
+    background: var(--bg-raised); color: var(--text);
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 96px;
+    border-top: 1px solid var(--line-soft);
+    padding: 40px 0 48px;
+    font-size: 0.85rem;
+    color: var(--text-faint);
+  }
+  .foot-grid { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .foot-grid a { color: var(--text-dim); }
+  .authors span { display: block; }
+
+  @media (max-width: 760px) {
+    .features, .steps { grid-template-columns: 1fr; }
+    .card.wide { grid-template-columns: 1fr; }
+    .install-box { grid-template-columns: 1fr; }
+    .hero { padding-top: 56px; }
+    .nav-links a:not(.gh) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav aria-label="Main">
+      <a class="brand" href="#">
+        <img src="assets/icon.png" alt="" width="26" height="26">
+        GitHub Copilot Model Advisor
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#install">Install</a>
+        <a class="gh" href="https://github.com/cperezsx/GitHubCopilotModelAdvisor">GitHub ↗</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section class="hero" aria-labelledby="hero-title">
+      <span class="badge"><span class="dot" aria-hidden="true"></span>VS Code extension · v1.0.0 · free</span>
+      <h1 id="hero-title">Know which GitHub Copilot model to use, <em>before</em> you waste a prompt on it.</h1>
+      <p class="sub">
+        A model can be enabled for your account but slow right now — or its provider can be mid-outage.
+        Model Advisor ranks your GitHub Copilot models by health, latency, and task fit, inside VS Code.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=cperezsx.githubcopilotmodeladvisor">Install for VS Code</a>
+        <a class="btn btn-ghost" href="https://github.com/cperezsx/GitHubCopilotModelAdvisor">View source</a>
+      </div>
+      <figure class="hero-img">
+        <img src="assets/hero.jpg" alt="The Model Advisor sidebar in VS Code showing a ranked list of GitHub Copilot models with latency bars and health indicators." width="1200" height="675">
+      </figure>
+    </section>
+
+    <section id="features" aria-labelledby="features-title">
+      <p class="kicker">What it does</p>
+      <h2 id="features-title">A compact instrument, not another dashboard</h2>
+      <p class="lede">Open the sidebar, run a check, know which model to use. That's the whole loop — recommendation first, details second.</p>
+
+      <div class="features">
+        <div class="card">
+          <span class="tag">zero tokens</span>
+          <h3>Token-free health checks</h3>
+          <p>The default check never sends a prompt to any model. It reads public status feeds from OpenAI, Anthropic, Google, and GitHub, then scores every GitHub Copilot model enabled for your account.</p>
+        </div>
+        <div class="card">
+          <span class="tag">opt-in</span>
+          <h3>Explicit latency benchmarks</h3>
+          <p>When speed matters, benchmark one model or all of them. It measures time to first token with a tiny prompt and always asks before spending anything.</p>
+        </div>
+        <div class="card wide">
+          <div>
+            <span class="tag">ranked recommendation</span>
+            <h3>One score, honest penalties</h3>
+            <p>Every model starts at 100 and loses points for slow first tokens, degraded providers, and active incidents. Ties break by latency. Uncertainty is shown as data, never hidden.</p>
+          </div>
+          <figure class="webview-shot">
+            <img src="assets/webview.png" alt="The Model Advisor sidebar: a recommended model card on top, a token-use notice, task-fit picks, and ranked model rows with latency chips and scores." width="776" height="3361" loading="lazy">
+          </figure>
+        </div>
+        <div class="card">
+          <span class="tag">task fit</span>
+          <h3>Light · medium · complex picks</h3>
+          <p>Separate suggestions for quick edits, everyday coding, and deep reasoning — built only from the models your account can actually use.</p>
+        </div>
+        <div class="card">
+          <span class="tag">always visible</span>
+          <h3>Status bar summary</h3>
+          <p>A compact, clickable summary stays in the status bar while you work, with full diagnostics in the output channel when you want them.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" aria-labelledby="how-title">
+      <p class="kicker">How it works</p>
+      <h2 id="how-title">Built on the official VS Code model API</h2>
+      <p class="lede">Models are discovered with <code>vscode.lm.selectChatModels({ vendor: "copilot" })</code>, so the list always matches what your account, organization, and session actually allow.</p>
+
+      <div class="steps">
+        <div class="step">
+          <h3>Detect</h3>
+          <p>Lists your enabled GitHub Copilot models, groups them by inferred provider, and collapses duplicate aliases.</p>
+        </div>
+        <div class="step">
+          <h3>Check health</h3>
+          <p>Reads public status pages for each provider plus the GitHub Copilot service — no prompts, no tokens.</p>
+        </div>
+        <div class="step">
+          <h3>Benchmark <span style="color:var(--text-faint); font-weight:400;">(optional)</span></h3>
+          <p>Measures time to first token and cancels the stream on the first chunk, so the cost per model is minimal.</p>
+        </div>
+        <div class="step">
+          <h3>Recommend</h3>
+          <p>Combines latency, provider health, and incidents into a ranked list, with the best current option on top.</p>
+        </div>
+      </div>
+
+      <div class="token-note">
+        <strong>No hidden cost.</strong> Health checks use zero GitHub Copilot tokens. Only the explicit benchmark sends a prompt (<code>hi</code> by default), and it always shows a confirmation with exactly which models will receive it.
+      </div>
+    </section>
+
+    <section aria-labelledby="sources-title">
+      <p class="kicker">Signals</p>
+      <h2 id="sources-title">Where the health data comes from</h2>
+      <p class="lede">All sources are public status feeds — nothing private leaves your editor.</p>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr><th scope="col">Signal</th><th scope="col">Source</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI</td><td>status.openai.com</td></tr>
+            <tr><td>Anthropic</td><td>status.claude.com</td></tr>
+            <tr><td>Google</td><td>status.cloud.google.com</td></tr>
+            <tr><td>GitHub Copilot service</td><td>githubstatus.com</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="install" aria-labelledby="install-title">
+      <p class="kicker">Get started</p>
+      <h2 id="install-title">Up and running in under a minute</h2>
+      <div class="install-box">
+        <div>
+          <p>Install <a href="https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat">GitHub Copilot Chat</a>, sign in to GitHub, then add Model Advisor. Open the sidebar icon and press <span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">M</span> (<span class="kbd">Cmd</span>+<span class="kbd">Shift</span>+<span class="kbd">M</span> on macOS) for an instant, token-free health check.</p>
+        </div>
+        <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=cperezsx.githubcopilotmodeladvisor">Install for VS Code</a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="authors">
+        <span>Carlos Perez — <a href="https://github.com/cperezsx">@cperezsx</a> · <a href="https://www.linkedin.com/in/cperezsx/">LinkedIn</a></span>
+        <span>Jose Miguel Durá — <a href="https://github.com/JMDura">@JMDura</a> · <a href="https://www.linkedin.com/in/jose-miguel-dur%C3%A1-sirvent/">LinkedIn</a></span>
+      </div>
+      <div>
+        <span>MIT License · <a href="https://github.com/cperezsx/GitHubCopilotModelAdvisor">Source</a> · <a href="https://github.com/cperezsx/GitHubCopilotModelAdvisor/issues">Issues</a></span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

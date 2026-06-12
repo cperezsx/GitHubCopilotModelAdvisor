@@ -1,0 +1,164 @@
+{
+  "name": "githubcopilotmodeladvisor",
+  "displayName": "GitHubCopilotModelAdvisor",
+  "description": "A VS Code sidebar advisor that ranks enabled GitHub Copilot models by health, latency, and task fit.",
+  "version": "1.0.0",
+  "publisher": "cperezsx",
+  "author": {
+    "name": "Carlos Perez",
+    "url": "https://github.com/cperezsx"
+  },
+  "contributors": [
+    {
+      "name": "Jose Miguel Durá",
+      "url": "https://github.com/JMDura"
+    }
+  ],
+  "license": "MIT",
+  "preview": false,
+  "pricing": "Free",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cperezsx/GitHubCopilotModelAdvisor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cperezsx/GitHubCopilotModelAdvisor/issues"
+  },
+  "homepage": "https://github.com/cperezsx/GitHubCopilotModelAdvisor#readme",
+  "galleryBanner": {
+    "color": "#03100b",
+    "theme": "dark"
+  },
+  "qna": false,
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "copilot",
+    "models",
+    "latency",
+    "status",
+    "advisor"
+  ],
+  "extensionDependencies": [
+    "GitHub.copilot-chat"
+  ],
+  "activationEvents": [
+    "onView:githubCopilotModelAdvisor.panel",
+    "onCommand:githubCopilotModelAdvisor.open",
+    "onCommand:githubCopilotModelAdvisor.checkNow",
+    "onCommand:githubCopilotModelAdvisor.benchmarkNow",
+    "onCommand:githubCopilotModelAdvisor.openSettings"
+  ],
+  "main": "./out/extension.js",
+  "icon": "media/icon.png",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "check": "tsc -p ./ --noEmit",
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package",
+    "publish:marketplace": "vsce publish"
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "githubCopilotModelAdvisor",
+          "title": "%githubCopilotModelAdvisor.container.title%",
+          "icon": "media/activity-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "githubCopilotModelAdvisor": [
+        {
+          "id": "githubCopilotModelAdvisor.panel",
+          "name": "%githubCopilotModelAdvisor.view.name%",
+          "type": "webview",
+          "icon": "media/activity-icon.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "githubCopilotModelAdvisor.open",
+        "title": "%githubCopilotModelAdvisor.command.open%",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "githubCopilotModelAdvisor.checkNow",
+        "title": "%githubCopilotModelAdvisor.command.checkNow%",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "githubCopilotModelAdvisor.benchmarkNow",
+        "title": "%githubCopilotModelAdvisor.command.benchmarkNow%",
+        "icon": "$(watch)"
+      },
+      {
+        "command": "githubCopilotModelAdvisor.openSettings",
+        "title": "%githubCopilotModelAdvisor.command.openSettings%",
+        "icon": "$(settings-gear)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "githubCopilotModelAdvisor.checkNow",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m",
+        "when": "editorTextFocus || !inputFocus"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "githubCopilotModelAdvisor.checkNow",
+          "when": "view == githubCopilotModelAdvisor.panel",
+          "group": "navigation@1"
+        },
+        {
+          "command": "githubCopilotModelAdvisor.benchmarkNow",
+          "when": "view == githubCopilotModelAdvisor.panel",
+          "group": "navigation@2"
+        },
+        {
+          "command": "githubCopilotModelAdvisor.openSettings",
+          "when": "view == githubCopilotModelAdvisor.panel",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "GitHubCopilotModelAdvisor",
+      "properties": {
+        "githubCopilotModelAdvisor.autoCheckOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run a token-free model health check when VS Code starts."
+        },
+        "githubCopilotModelAdvisor.showInStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the GitHubCopilotModelAdvisor status bar item."
+        },
+        "githubCopilotModelAdvisor.testPrompt": {
+          "type": "string",
+          "default": "hi",
+          "description": "Tiny prompt used only for explicit latency benchmarks."
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.92.0",
+    "@vscode/vsce": "^3.9.1",
+    "typescript": "^5.8.0"
+  }
+}
