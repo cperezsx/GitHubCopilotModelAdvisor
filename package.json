@@ -4,6 +4,10 @@
   "description": "A VS Code sidebar advisor that ranks available GitHub Copilot models by latency and provider health.",
   "version": "0.0.1",
   "publisher": "cperezsx",
+  "author": {
+    "name": "Carlos Perez",
+    "url": "https://github.com/cperezsx"
+  },
   "license": "MIT",
   "preview": true,
   "pricing": "Free",
