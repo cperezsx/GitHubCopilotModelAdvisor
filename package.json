@@ -2,7 +2,7 @@
   "name": "githubcopilotmodeladvisor",
   "displayName": "GitHubCopilotModelAdvisor",
   "description": "A VS Code sidebar advisor that ranks enabled GitHub Copilot models by health, latency, and task fit.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "cperezsx",
   "author": {
     "name": "Carlos Perez",
