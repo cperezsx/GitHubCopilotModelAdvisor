@@ -8,6 +8,12 @@
     "name": "Carlos Perez",
     "url": "https://github.com/cperezsx"
   },
+  "contributors": [
+    {
+      "name": "Jose Miguel Durá",
+      "url": "https://github.com/JMDura"
+    }
+  ],
   "license": "MIT",
   "preview": true,
   "pricing": "Free",

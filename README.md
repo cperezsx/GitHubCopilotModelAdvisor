@@ -22,7 +22,7 @@ It compares the Copilot models available to your account, measures first-token l
 - [Limits](#limits)
 - [Support](#support)
 - [Preview Status](#preview-status)
-- [Author](#author)
+- [Authors](#authors)
 - [Development](#development)
 - [Repository](#repository)
 - [License](#license)
@@ -173,11 +173,15 @@ npm run package
 
 Press `F5` in VS Code to launch an Extension Development Host.
 
-## Author
+## Authors
 
 Carlos Perez  
 GitHub: [@cperezsx](https://github.com/cperezsx)  
 LinkedIn: [cperezsx](https://www.linkedin.com/in/cperezsx/)
+
+Jose Miguel Durá  
+GitHub: [@JMDura](https://github.com/JMDura)  
+LinkedIn: [Jose Miguel Durá Sirvent](https://www.linkedin.com/in/jose-miguel-dur%C3%A1-sirvent/)
 
 ## Repository
 
