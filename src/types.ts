@@ -1,5 +1,8 @@
 export type Provider = "openai" | "anthropic" | "google" | "unknown";
 export type ServiceProvider = Provider | "github-copilot";
+export type LatencySource = "live" | "cache";
+export type LatencyTrend = "faster" | "slower" | "stable";
+export type ConfidenceLevel = "high" | "medium" | "low";
 
 export type ModelInfo = {
   id: string;
@@ -12,12 +15,23 @@ export type ModelInfo = {
   route: "github-copilot";
 };
 
+export type LatencyMetadata = {
+  checkedAt?: number;
+  source?: LatencySource;
+  isStale?: boolean;
+  previousLatency?: number;
+  latencyDelta?: number;
+  trend?: LatencyTrend;
+  sampleCount?: number;
+  medianLatency?: number;
+};
+
 export type LatencyResult =
-  | { status: "fast"; latency: number }
-  | { status: "slow"; latency: number }
-  | { status: "skipped"; latency: null; reason: string }
-  | { status: "timeout"; latency: null }
-  | { status: "error"; latency: null; error: string };
+  | ({ status: "fast"; latency: number } & LatencyMetadata)
+  | ({ status: "slow"; latency: number } & LatencyMetadata)
+  | ({ status: "skipped"; latency: null; reason: string } & LatencyMetadata)
+  | ({ status: "timeout"; latency: null } & LatencyMetadata)
+  | ({ status: "error"; latency: null; error: string } & LatencyMetadata);
 
 export type ProviderStatusLevel =
   | "operational"
@@ -39,6 +53,10 @@ export type ModelRecommendation = {
   latency: LatencyResult;
   providerStatus: StatusResult;
   score: number;
+  confidence: {
+    level: ConfidenceLevel;
+    reason: string;
+  };
   reason: string;
   recommended: boolean;
 };
@@ -52,7 +70,7 @@ export type TaskRecommendation = {
   reason: string;
 };
 
-export type AdvisorMode = "healthOnly" | "benchmark" | "selectedBenchmark";
+export type AdvisorMode = "healthOnly" | "benchmark" | "selectedBenchmark" | "cachedBenchmark";
 
 export type AdvisorResult = {
   mode: AdvisorMode;
@@ -62,6 +80,8 @@ export type AdvisorResult = {
   providers: StatusResult[];
   best?: ModelRecommendation;
   taskRecommendations: TaskRecommendation[];
+  lastBenchmarkAt?: number;
+  cacheTtlMinutes?: number;
   tokenNotice: string;
   availabilityNotice: string;
 };

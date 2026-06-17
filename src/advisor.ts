@@ -7,6 +7,7 @@ import {
   ServiceProvider,
   StatusResult,
   AdvisorMode,
+  ConfidenceLevel,
   TaskProfile,
   TaskRecommendation
 } from "./types";
@@ -16,7 +17,8 @@ export function buildAdvisorResult(
   latencyResults: Map<string, LatencyResult>,
   statusResults: Map<ServiceProvider, StatusResult>,
   mode: AdvisorMode,
-  benchmarkedModelId?: string
+  benchmarkedModelId?: string,
+  options: { cacheTtlMinutes?: number } = {}
 ): AdvisorResult {
   const recommendations = models
     .map((model) => {
@@ -45,6 +47,7 @@ export function buildAdvisorResult(
     ...item,
     recommended: item.model.id === best?.model.id
   }));
+  const lastBenchmarkAt = latestBenchmarkTimestamp(withRecommendation);
 
   return {
     mode,
@@ -54,14 +57,28 @@ export function buildAdvisorResult(
     providers: Array.from(statusResults.values()),
     best,
     taskRecommendations: buildTaskRecommendations(withRecommendation),
+    lastBenchmarkAt,
+    cacheTtlMinutes: options.cacheTtlMinutes,
     tokenNotice:
       mode === "benchmark"
         ? "Latency benchmark sends a tiny prompt to each model and uses about 5 GitHub Copilot tokens per model."
         : mode === "selectedBenchmark"
           ? "Selected-model benchmark sends a tiny prompt to one model and uses a small amount of GitHub Copilot tokens."
-        : "Health check does not send prompts to any model, so it does not use GitHub Copilot tokens.",
+          : mode === "cachedBenchmark"
+            ? "Cached benchmark uses the last saved latency measurements and does not send prompts to any model."
+            : lastBenchmarkAt
+              ? "Health check does not send prompts to any model; cached benchmark latency is reused when available."
+              : "Health check does not send prompts to any model, so it does not use GitHub Copilot tokens.",
     availabilityNotice: "Showing only GitHub Copilot models currently enabled for this user in VS Code."
   };
+}
+
+function latestBenchmarkTimestamp(models: ModelRecommendation[]): number | undefined {
+  const timestamps = models
+    .map((item) => item.latency.checkedAt)
+    .filter((checkedAt): checkedAt is number => typeof checkedAt === "number");
+
+  return timestamps.length > 0 ? Math.max(...timestamps) : undefined;
 }
 
 function statusKeyForModel(model: ModelInfo): ServiceProvider {
@@ -90,7 +107,7 @@ export function scoreModel(
 ): ModelRecommendation {
   const score = Math.max(
     0,
-    100 - latencyPenalty(latency) - statusPenalty(providerStatus) - incidentPenalty(providerStatus)
+    100 - latencyPenalty(latency) - statusPenalty(providerStatus) - incidentPenalty(providerStatus) - stalePenalty(latency)
   );
 
   return {
@@ -98,6 +115,7 @@ export function scoreModel(
     latency,
     providerStatus,
     score,
+    confidence: confidenceFor(latency, providerStatus),
     reason: reasonFor(model, latency, providerStatus, score),
     recommended: false
   };
@@ -150,6 +168,33 @@ function incidentPenalty(result: StatusResult): number {
   return result.incidents.length > 0 ? 30 : 0;
 }
 
+function stalePenalty(result: LatencyResult): number {
+  return result.isStale ? 10 : 0;
+}
+
+function confidenceFor(
+  latency: LatencyResult,
+  providerStatus: StatusResult
+): { level: ConfidenceLevel; reason: string } {
+  if (latency.isStale) {
+    return { level: "low", reason: "Latency is cached but older than the configured cache window." };
+  }
+
+  if (latency.source === "live" && providerStatus.status === "operational" && providerStatus.incidents.length === 0) {
+    return { level: "high", reason: "Live latency and healthy provider status are both available." };
+  }
+
+  if (latency.source === "cache" && providerStatus.status === "operational" && providerStatus.incidents.length === 0) {
+    return { level: "medium", reason: "Fresh cached latency is combined with current provider health." };
+  }
+
+  if (latency.status === "skipped" && providerStatus.status === "operational") {
+    return { level: "medium", reason: "Provider health is current, but live latency has not been measured." };
+  }
+
+  return { level: "low", reason: "Recommendation depends on incomplete, stale, or degraded signals." };
+}
+
 function reasonFor(
   model: ModelInfo,
   latency: LatencyResult,
@@ -161,6 +206,10 @@ function reasonFor(
   const routeLabel = "via GitHub Copilot";
 
   if (score > 80 && latency.latency !== null) {
+    if (latency.isStale) {
+      return `${model.name} has cached latency (${latency.latency} ms), but that measurement is stale. Refresh the benchmark for a stronger signal.`;
+    }
+
     return `${model.name} looks good right now: ${latency.latency} ms, ${providerLabel} ${routeLabel}, and ${healthLabel} is healthy.`;
   }
 
