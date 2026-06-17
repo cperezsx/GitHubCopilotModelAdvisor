@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { randomBytes } from "crypto";
 import { AdvisorResult } from "./types";
 
 export class AdvisorWebviewViewProvider implements vscode.WebviewViewProvider {
@@ -34,8 +35,16 @@ export class AdvisorWebviewViewProvider implements vscode.WebviewViewProvider {
         void vscode.commands.executeCommand("githubCopilotModelAdvisor.openSettings");
       }
 
+      if (message.command === "copyDiagnostics") {
+        void vscode.commands.executeCommand("githubCopilotModelAdvisor.copyDiagnostics");
+      }
+
       if (message.command === "openExternal" && message.url) {
-        void vscode.env.openExternal(vscode.Uri.parse(message.url));
+        const uri = vscode.Uri.parse(message.url);
+
+        if (isAllowedExternalUri(uri)) {
+          void vscode.env.openExternal(uri);
+        }
       }
     });
 
@@ -66,9 +75,22 @@ export class AdvisorWebviewViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const nonce = String(Date.now());
+    const nonce = randomBytes(16).toString("base64");
     this.view.webview.html = getHtml(this.state, nonce);
   }
+}
+
+function isAllowedExternalUri(uri: vscode.Uri): boolean {
+  if (uri.scheme !== "https") {
+    return false;
+  }
+
+  return new Set([
+    "status.openai.com",
+    "status.claude.com",
+    "status.cloud.google.com",
+    "www.githubstatus.com"
+  ]).has(uri.authority.toLowerCase());
 }
 
 export type ViewState =
@@ -78,7 +100,7 @@ export type ViewState =
   | { kind: "error"; message: string };
 
 type WebviewMessage = {
-  command: "checkNow" | "benchmarkNow" | "benchmarkModel" | "openSettings" | "openExternal";
+  command: "checkNow" | "benchmarkNow" | "benchmarkModel" | "copyDiagnostics" | "openSettings" | "openExternal";
   url?: string;
   modelId?: string;
 };
@@ -703,7 +725,7 @@ function renderBody(state: ViewState): string {
   const { result } = state;
   const best = result.best;
   const summary = best
-    ? `<div class="summary best"><span class="badge"><span class="dot good"></span>${result.mode === "healthOnly" ? "Healthy pick" : "Recommended"}</span><strong>${escapeHtml(best.model.name)}</strong><p class="reason">${escapeHtml(best.reason)}</p><div class="actions"><button data-command="checkNow">Health check</button><button class="secondary" data-command="benchmarkNow">Benchmark all</button></div></div>`
+    ? `<div class="summary best"><span class="badge"><span class="dot good"></span>${summaryLabel(result)}</span><strong>${escapeHtml(best.model.name)}</strong><p class="reason">${escapeHtml(best.reason)}</p><div class="actions"><button data-command="checkNow">Health check</button><button class="secondary" data-command="benchmarkNow">Benchmark all</button><button class="secondary" data-command="copyDiagnostics">Copy diagnostics</button></div></div>`
     : `<div class="summary"><span class="badge"><span class="dot warn"></span>No models</span><strong>No GitHub Copilot models found</strong><p class="reason">Install and sign in to GitHub Copilot Chat.</p><div class="actions"><button data-command="checkNow">Try again</button></div></div>`;
 
   const models = renderModelGroups(result);
@@ -712,7 +734,10 @@ function renderBody(state: ViewState): string {
     .slice()
     .sort((left, right) => providerOrder(left.provider) - providerOrder(right.provider))
     .map((provider) => `<div class="provider-row">
-      <span>${escapeHtml(providerLabel(provider.provider))}</span>
+      <span>
+        ${escapeHtml(providerLabel(provider.provider))}
+        ${provider.incidents.length > 0 ? `<span class="provider-subtitle">${escapeHtml(provider.incidents.join(" | "))}</span>` : ""}
+      </span>
       <span class="badge"><span class="dot ${statusClass(provider.status)}"></span>${escapeHtml(statusLabel(provider.status))}</span>
       <button class="link-button" data-command="openExternal" data-url="${escapeHtml(provider.statusPageUrl)}">Status page</button>
     </div>`)
@@ -720,6 +745,7 @@ function renderBody(state: ViewState): string {
 
   return `${summary}
     ${renderTokenNotice(result)}
+    ${renderBenchmarkNotice(result)}
     <div class="section-title">Task fit</div>
     ${renderTaskRecommendations(result)}
     <div class="section-title">Models</div>
@@ -767,6 +793,9 @@ function renderModelGroups(result: AdvisorResult): string {
               <div class="model-meta">
                 <span>${escapeHtml(providerMeta(item.model.provider))}</span>
                 <span class="chip ${latencyChipClass(item.latency)}">${escapeHtml(latencyLabel(item.latency))}</span>
+                <span class="chip ${confidenceChipClass(item.confidence.level)}">${escapeHtml(confidenceLabel(item.confidence.level))}</span>
+                ${item.latency.checkedAt ? `<span class="chip">${escapeHtml(benchmarkTimeLabel(item.latency.checkedAt))}</span>` : ""}
+                ${latencyExtraChips(item.latency)}
                 ${selectedBenchmarked ? `<span class="chip good">benchmarked</span>` : ""}
               </div>
               <div class="reason">${escapeHtml(item.reason)}</div>
@@ -799,11 +828,40 @@ function renderModelGroups(result: AdvisorResult): string {
 }
 
 function renderTokenNotice(result: AdvisorResult): string {
-  if (result.mode === "healthOnly") {
+  if (result.mode === "healthOnly" || result.mode === "cachedBenchmark") {
     return `<div class="notice no-cost"><div><strong>No GitHub Copilot tokens used</strong>${escapeHtml(result.tokenNotice)}</div></div>`;
   }
 
   return `<div class="notice cost"><div><strong>GitHub Copilot tokens used</strong>${escapeHtml(result.tokenNotice)}</div></div>`;
+}
+
+function renderBenchmarkNotice(result: AdvisorResult): string {
+  if (!result.lastBenchmarkAt) {
+    return "";
+  }
+
+  const title = result.mode === "cachedBenchmark" || result.mode === "healthOnly"
+    ? "Cached benchmark latency"
+    : "Benchmark saved";
+  const ttl = result.cacheTtlMinutes !== undefined
+    ? result.cacheTtlMinutes === 0
+      ? " Cached latency never becomes stale automatically."
+      : ` Cached latency is marked stale after ${result.cacheTtlMinutes} minutes.`
+    : "";
+
+  return `<div class="notice no-cost"><div><strong>${title}</strong>Last benchmark: ${escapeHtml(formatDateTime(result.lastBenchmarkAt))}. This cache is shared across VS Code workspaces for this extension.${escapeHtml(ttl)}</div></div>`;
+}
+
+function summaryLabel(result: AdvisorResult): string {
+  if (result.mode === "healthOnly") {
+    return "Healthy pick";
+  }
+
+  if (result.mode === "cachedBenchmark") {
+    return "Cached pick";
+  }
+
+  return "Recommended";
 }
 
 function renderTaskRecommendations(result: AdvisorResult): string {
@@ -844,6 +902,65 @@ function latencyLabel(latency: AdvisorResult["models"][number]["latency"]): stri
   }
 
   return `${latency.latency} ms`;
+}
+
+function latencyExtraChips(latency: AdvisorResult["models"][number]["latency"]): string {
+  const chips: string[] = [];
+
+  if (latency.isStale) {
+    chips.push(`<span class="chip warn">stale</span>`);
+  }
+
+  if (latency.latencyDelta !== undefined) {
+    const label = `${latency.latencyDelta >= 0 ? "+" : ""}${latency.latencyDelta} ms`;
+    chips.push(`<span class="chip ${latency.latencyDelta <= 0 ? "good" : "warn"}">${escapeHtml(label)}</span>`);
+  }
+
+  if (latency.trend) {
+    chips.push(`<span class="chip ${trendChipClass(latency.trend)}">${escapeHtml(latency.trend)}</span>`);
+  }
+
+  if (latency.medianLatency !== undefined && latency.sampleCount && latency.sampleCount > 1) {
+    chips.push(`<span class="chip">median ${latency.medianLatency} ms</span>`);
+  }
+
+  return chips.join("");
+}
+
+function trendChipClass(trend: NonNullable<AdvisorResult["models"][number]["latency"]["trend"]>): string {
+  if (trend === "faster") {
+    return "good";
+  }
+
+  if (trend === "slower") {
+    return "warn";
+  }
+
+  return "";
+}
+
+function confidenceLabel(level: AdvisorResult["models"][number]["confidence"]["level"]): string {
+  return `confidence ${level}`;
+}
+
+function confidenceChipClass(level: AdvisorResult["models"][number]["confidence"]["level"]): string {
+  if (level === "high") {
+    return "good";
+  }
+
+  if (level === "low") {
+    return "warn";
+  }
+
+  return "";
+}
+
+function benchmarkTimeLabel(timestamp: number): string {
+  return `measured ${formatDateTime(timestamp)}`;
+}
+
+function formatDateTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleString();
 }
 
 function latencyChipClass(latency: AdvisorResult["models"][number]["latency"]): string {

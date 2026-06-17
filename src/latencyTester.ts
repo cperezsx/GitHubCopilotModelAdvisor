@@ -31,19 +31,20 @@ export async function testModelLatency(
     for await (const _chunk of request.stream) {
       const latency = Date.now() - start;
       tokenSource.cancel();
-      return classifyLatency(latency);
+      return { ...classifyLatency(latency), checkedAt: Date.now() };
     }
 
-    return { status: "timeout", latency: null };
+    return { status: "timeout", latency: null, checkedAt: Date.now() };
   } catch (error) {
     if (tokenSource.token.isCancellationRequested) {
-      return { status: "timeout", latency: null };
+      return { status: "timeout", latency: null, checkedAt: Date.now() };
     }
 
     return {
       status: "error",
       latency: null,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
+      checkedAt: Date.now()
     };
   } finally {
     clearTimeout(timer);

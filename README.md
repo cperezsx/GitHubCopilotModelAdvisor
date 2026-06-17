@@ -2,7 +2,7 @@
 
 > Know which GitHub Copilot Chat model to use right now, without leaving VS Code.
 
-[![Version](https://img.shields.io/badge/version-1.0.1-68f0a7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.2-68f0a7)](CHANGELOG.md)
 [![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.92-65d8e9)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-f3bb58)](LICENSE)
 
@@ -31,7 +31,7 @@ GitHub Copilot Model Advisor answers that question in seconds: it checks which m
 
 The everyday scenario: you are mid-task, Copilot feels sluggish, and you do not know whether to switch models or wait. Opening a provider dashboard breaks your flow. Asking a colleague is not always an option.
 
-Model Advisor keeps that signal inside VS Code. Open the sidebar, press `Ctrl+Shift+M`, and in a few seconds you see which of your enabled models is healthy and fast right now. The default check never sends a prompt to any model and uses zero GitHub Copilot tokens. Benchmarking is opt-in and always asks for confirmation.
+Model Advisor keeps that signal inside VS Code. Open the sidebar, run a health check, and in a few seconds you see which of your enabled models is healthy and fast right now. The default check never sends a prompt to any model and uses zero GitHub Copilot tokens. Benchmarking is opt-in, always asks for confirmation, and saves timestamped latency history in a global cache shared across your VS Code workspaces.
 
 ## What Is Real and What Is a Heuristic
 
@@ -61,10 +61,10 @@ The `Auto` entry (GitHub's routing alias) is excluded from detection, scoring, a
 1. Install [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat) and sign in to GitHub in VS Code.
 2. Install GitHub Copilot Model Advisor.
 3. Open the **Model Advisor** icon in the Activity Bar.
-4. Click **Health check** or press `Ctrl+Shift+M` (`Cmd+Shift+M` on macOS).
+4. Click **Health check**.
 5. Use the recommended model at the top, or pick from the light / medium / complex task suggestions.
 
-When raw speed matters, click **Benchmark** on one model or **Benchmark all**. The extension shows a confirmation dialog before sending any prompt.
+When raw speed matters, click **Benchmark** on one model or **Benchmark all**. The extension shows a confirmation dialog before sending any prompt. If a previous benchmark exists, you can reuse cached results instead of spending more tokens. Cached latency shows its age, stale state, recent median, and trend.
 
 ## How It Works
 
@@ -110,21 +110,24 @@ Health signals come from public status feeds:
 | `Open Advisor` | Opens the sidebar. |
 | `Check Health Now` | Token-free detection, health check, and scoring. |
 | `Benchmark Latency (Uses GitHub Copilot Tokens)` | Confirms, then runs the live latency benchmark. |
+| `Copy Diagnostics` | Copies a support-friendly report with model scores, confidence, health, and cache timestamps. |
 | `Open Settings` | Opens extension settings. |
-
-Default keyboard shortcut: `Ctrl+Shift+M` / `Cmd+Shift+M`.
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
 | `githubCopilotModelAdvisor.autoCheckOnStartup` | `false` | Run a token-free check when VS Code starts. |
 | `githubCopilotModelAdvisor.showInStatusBar` | `true` | Show the status bar item. |
 | `githubCopilotModelAdvisor.testPrompt` | `hi` | Prompt used only for explicit latency benchmarks. |
+| `githubCopilotModelAdvisor.benchmarkCacheTtlMinutes` | `120` | Minutes before cached latency is marked stale. Use `0` to never mark it stale automatically. |
+| `githubCopilotModelAdvisor.allowBenchmarkAll` | `true` | Allow benchmarking all enabled models in one action. Disable to keep only per-model benchmarks. |
 
 ## Limits
 
 - **Model switching**: VS Code does not expose an API for an extension to set the active Copilot Chat model. The extension advises; you select.
 - **Silent saturation**: Undeclared provider degradation is invisible to any external tool, including this one.
 - **Benchmark ≠ production latency**: The tiny benchmark prompt measures responsiveness, not throughput under your real workload.
+- **Latency cache**: Cached benchmark results are shared across VS Code workspaces for this extension. The UI shows when the cached benchmark was measured, whether it is stale, median recent latency, and trend so you can decide whether to rerun it.
+- **Confidence**: Recommendations expose a confidence label. Live benchmark plus healthy provider is strongest; stale cache or degraded provider lowers confidence.
 - **Google precision**: Only declared Google Cloud incidents mentioning Gemini, Vertex AI, or generative AI are flagged.
 - **Tokens**: Only explicit benchmarks use GitHub Copilot tokens. Health checks never do.
 

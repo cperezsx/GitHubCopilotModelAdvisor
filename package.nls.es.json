@@ -4,5 +4,6 @@
   "githubCopilotModelAdvisor.command.open": "GitHubCopilotModelAdvisor: Abrir asesor",
   "githubCopilotModelAdvisor.command.checkNow": "GitHubCopilotModelAdvisor: Comprobar salud ahora",
   "githubCopilotModelAdvisor.command.benchmarkNow": "GitHubCopilotModelAdvisor: Medir latencia (usa tokens de GitHub Copilot)",
+  "githubCopilotModelAdvisor.command.copyDiagnostics": "GitHubCopilotModelAdvisor: Copiar diagnostico",
   "githubCopilotModelAdvisor.command.openSettings": "GitHubCopilotModelAdvisor: Abrir configuracion"
 }

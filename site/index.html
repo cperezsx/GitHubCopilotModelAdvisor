@@ -290,7 +290,7 @@
   <div class="wrap">
 
     <section class="hero" aria-labelledby="hero-title">
-      <span class="badge"><span class="dot" aria-hidden="true"></span>VS Code extension · v1.0.1 · free</span>
+      <span class="badge"><span class="dot" aria-hidden="true"></span>VS Code extension · v1.0.2 · free</span>
       <h1 id="hero-title">Know which GitHub Copilot model to use, <em>before</em> you waste a prompt on it.</h1>
       <p class="sub">
         A model can be enabled for your account but slow right now — or its provider can be mid-outage.
@@ -319,13 +319,13 @@
         <div class="card">
           <span class="tag">opt-in</span>
           <h3>Explicit latency benchmarks</h3>
-          <p>When speed matters, benchmark one model or all of them. It measures time to first token with a tiny prompt and always asks before spending anything.</p>
+          <p>When speed matters, benchmark one model or all of them. It measures time to first token, saves recent history, and shows cache age, trend, and median latency.</p>
         </div>
         <div class="card wide">
           <div>
             <span class="tag">ranked recommendation</span>
             <h3>One score, honest penalties</h3>
-            <p>Every model starts at 100 and loses points for slow first tokens, degraded providers, and active incidents. Ties break by latency. Uncertainty is shown as data, never hidden.</p>
+          <p>Every model starts at 100 and loses points for slow first tokens, stale cached latency, degraded providers, and active incidents. Confidence labels make uncertainty visible.</p>
           </div>
           <figure class="webview-shot">
             <img src="assets/webview.png" alt="The Model Advisor sidebar: a recommended model card on top, a token-use notice, task-fit picks, and ranked model rows with latency chips and scores." width="776" height="3361" loading="lazy">
@@ -360,7 +360,7 @@
         </div>
         <div class="step">
           <h3>Benchmark <span style="color:var(--text-faint); font-weight:400;">(optional)</span></h3>
-          <p>Measures time to first token and cancels the stream on the first chunk, so the cost per model is minimal.</p>
+          <p>Measures time to first token and cancels the stream on the first chunk. Cached benchmark results are shared across your VS Code workspaces and marked stale after your configured TTL.</p>
         </div>
         <div class="step">
           <h3>Recommend</h3>
@@ -369,7 +369,7 @@
       </div>
 
       <div class="token-note">
-        <strong>No hidden cost.</strong> Health checks use zero GitHub Copilot tokens. Only the explicit benchmark sends a prompt (<code>hi</code> by default), and it always shows a confirmation with exactly which models will receive it.
+        <strong>No hidden cost.</strong> Health checks use zero GitHub Copilot tokens. Only the explicit benchmark sends a prompt (<code>hi</code> by default), and it always shows a confirmation with exactly which models will receive it. If cached latency exists, you can reuse it instead, or disable Benchmark All entirely.
       </div>
     </section>
 
@@ -397,7 +397,7 @@
       <h2 id="install-title">Up and running in under a minute</h2>
       <div class="install-box">
         <div>
-          <p>Install <a href="https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat">GitHub Copilot Chat</a>, sign in to GitHub, then add Model Advisor. Open the sidebar icon and press <span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">M</span> (<span class="kbd">Cmd</span>+<span class="kbd">Shift</span>+<span class="kbd">M</span> on macOS) for an instant, token-free health check.</p>
+          <p>Install <a href="https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat">GitHub Copilot Chat</a>, sign in to GitHub, then add Model Advisor. Open the sidebar icon and click Health check for an instant, token-free signal.</p>
         </div>
         <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=cperezsx.githubcopilotmodeladvisor">Install for VS Code</a>
       </div>

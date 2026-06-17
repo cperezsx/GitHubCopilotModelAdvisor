@@ -1,8 +1,8 @@
 {
   "name": "githubcopilotmodeladvisor",
-  "displayName": "GitHubCopilotModelAdvisor",
+  "displayName": "GitHub Copilot Model Advisor",
   "description": "A VS Code sidebar advisor that ranks enabled GitHub Copilot models by health, latency, and task fit.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "cperezsx",
   "author": {
     "name": "Carlos Perez",
@@ -53,6 +53,7 @@
     "onCommand:githubCopilotModelAdvisor.open",
     "onCommand:githubCopilotModelAdvisor.checkNow",
     "onCommand:githubCopilotModelAdvisor.benchmarkNow",
+    "onCommand:githubCopilotModelAdvisor.copyDiagnostics",
     "onCommand:githubCopilotModelAdvisor.openSettings"
   ],
   "main": "./out/extension.js",
@@ -61,6 +62,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "check": "tsc -p ./ --noEmit",
+    "test": "npm run compile && node --test test/*.test.js",
     "vscode:prepublish": "npm run compile",
     "package": "vsce package",
     "publish:marketplace": "vsce publish"
@@ -102,17 +104,14 @@
         "icon": "$(watch)"
       },
       {
+        "command": "githubCopilotModelAdvisor.copyDiagnostics",
+        "title": "%githubCopilotModelAdvisor.command.copyDiagnostics%",
+        "icon": "$(copy)"
+      },
+      {
         "command": "githubCopilotModelAdvisor.openSettings",
         "title": "%githubCopilotModelAdvisor.command.openSettings%",
         "icon": "$(settings-gear)"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "githubCopilotModelAdvisor.checkNow",
-        "key": "ctrl+shift+m",
-        "mac": "cmd+shift+m",
-        "when": "editorTextFocus || !inputFocus"
       }
     ],
     "menus": {
@@ -128,9 +127,14 @@
           "group": "navigation@2"
         },
         {
-          "command": "githubCopilotModelAdvisor.openSettings",
+          "command": "githubCopilotModelAdvisor.copyDiagnostics",
           "when": "view == githubCopilotModelAdvisor.panel",
           "group": "navigation@3"
+        },
+        {
+          "command": "githubCopilotModelAdvisor.openSettings",
+          "when": "view == githubCopilotModelAdvisor.panel",
+          "group": "navigation@4"
         }
       ]
     },
@@ -151,6 +155,17 @@
           "type": "string",
           "default": "hi",
           "description": "Tiny prompt used only for explicit latency benchmarks."
+        },
+        "githubCopilotModelAdvisor.benchmarkCacheTtlMinutes": {
+          "type": "number",
+          "default": 120,
+          "minimum": 0,
+          "description": "Minutes before cached benchmark latency is marked stale. Use 0 to never mark cached latency stale."
+        },
+        "githubCopilotModelAdvisor.allowBenchmarkAll": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow benchmarking all enabled GitHub Copilot models in one action. Disable to permit only per-model benchmarks."
         }
       }
     }
