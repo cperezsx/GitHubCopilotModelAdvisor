@@ -58,6 +58,35 @@ test("scoreModel lowers confidence and score for stale cached latency", () => {
   assert.match(recommendation.reason, /stale/);
 });
 
+test("Microsoft and xAI models fall back to GitHub Copilot health, Moonshot uses its own feed", () => {
+  const models = [
+    model("mai-code-1-flash", "MAI-Code-1-Flash", "microsoft"),
+    model("grok-code-fast-1", "Grok Code Fast 1", "xai"),
+    model("kimi-k2.7-code", "Kimi K2.7 Code", "moonshot")
+  ];
+  const latencies = new Map([
+    ["mai-code-1-flash", { status: "fast", latency: 300, checkedAt: 1000, source: "live" }],
+    ["grok-code-fast-1", { status: "fast", latency: 350, checkedAt: 1000, source: "live" }],
+    ["kimi-k2.7-code", { status: "fast", latency: 500, checkedAt: 1000, source: "live" }]
+  ]);
+  const statuses = new Map([
+    ["moonshot", status("moonshot", "operational")],
+    ["github-copilot", status("github-copilot", "major_outage")]
+  ]);
+
+  const result = buildAdvisorResult(models, latencies, statuses, "benchmark");
+  const mai = result.models.find((item) => item.model.id === "mai-code-1-flash");
+  const grok = result.models.find((item) => item.model.id === "grok-code-fast-1");
+  const kimi = result.models.find((item) => item.model.id === "kimi-k2.7-code");
+
+  assert.equal(mai.providerStatus.provider, "github-copilot");
+  assert.equal(mai.score, 20);
+  assert.equal(grok.providerStatus.provider, "github-copilot");
+  assert.equal(grok.score, 20);
+  assert.equal(kimi.providerStatus.provider, "moonshot");
+  assert.equal(kimi.score, 100);
+});
+
 test("buildAdvisorResult keeps benchmark timestamp and cached token notice", () => {
   const models = [
     model("gpt-5-mini", "GPT-5 mini", "openai"),

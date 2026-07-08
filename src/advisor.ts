@@ -82,7 +82,12 @@ function latestBenchmarkTimestamp(models: ModelRecommendation[]): number | undef
 }
 
 function statusKeyForModel(model: ModelInfo): ServiceProvider {
-  return model.provider === "unknown" ? "github-copilot" : model.provider;
+  // Microsoft AI and xAI publish no machine-readable public status feed, so
+  // their models — like unknown providers — fall back to their delivery
+  // route's health.
+  return model.provider === "unknown" || model.provider === "microsoft" || model.provider === "xai"
+    ? "github-copilot"
+    : model.provider;
 }
 
 function statusPageUrl(provider: ServiceProvider): string {
@@ -93,6 +98,12 @@ function statusPageUrl(provider: ServiceProvider): string {
       return "https://status.claude.com/";
     case "google":
       return "https://status.cloud.google.com/";
+    case "moonshot":
+      return "https://status.moonshot.cn/";
+    case "microsoft":
+      return "https://www.githubstatus.com/";
+    case "xai":
+      return "https://status.x.ai/";
     case "github-copilot":
       return "https://www.githubstatus.com/";
     case "unknown":
@@ -248,6 +259,12 @@ function providerName(provider: Provider): string {
       return "Anthropic";
     case "google":
       return "Google";
+    case "moonshot":
+      return "Moonshot AI";
+    case "microsoft":
+      return "Microsoft";
+    case "xai":
+      return "xAI";
     case "unknown":
       return "Unknown provider";
   }
@@ -314,7 +331,7 @@ function taskFitScore(profile: TaskProfile, model: ModelInfo): number {
 function modelWeight(model: ModelInfo): { light: number; medium: number; complex: number } {
   const label = `${model.name} ${model.family} ${model.id}`.toLowerCase();
 
-  if (containsAny(label, ["haiku", "mini", "nano", "flash", "lite", "small"])) {
+  if (containsAny(label, ["haiku", "mini", "nano", "flash", "lite", "small", "fast"])) {
     return { light: 28, medium: 8, complex: -12 };
   }
 
@@ -322,7 +339,7 @@ function modelWeight(model: ModelInfo): { light: number; medium: number; complex
     return { light: -16, medium: 10, complex: 30 };
   }
 
-  if (containsAny(label, ["sonnet", "gpt-4o", "gpt-4.1", "gpt-5", "gemini-pro", "pro"])) {
+  if (containsAny(label, ["sonnet", "gpt-4o", "gpt-4.1", "gpt-5", "gemini-pro", "pro", "kimi", "k2"])) {
     return { light: -4, medium: 22, complex: 16 };
   }
 

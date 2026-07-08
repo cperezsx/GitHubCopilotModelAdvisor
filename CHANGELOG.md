@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.0
+
+- Added Moonshot AI as an inferred provider (Kimi K2.7 Code and other Kimi models) with its own public health feed (status.moonshot.cn).
+- Added Microsoft as an inferred provider (MAI-Code-1-Flash and other MAI models). Microsoft AI publishes no dedicated public status feed, so MAI model health tracks the GitHub Copilot service status.
+- Added xAI as an inferred provider (Grok Code Fast and other Grok models). status.x.ai has no machine-readable feed, so Grok model health also tracks the GitHub Copilot service status.
+- Task-fit weighting now recognizes Kimi/K2 models as balanced everyday models and speed-focused models ("fast", like Grok Code Fast) as light picks; MAI Flash models already land in the light bucket.
+- CI now runs the full test suite and a webview render smoke test on every pull request, not just the TypeScript type check.
+- Refreshed the landing-site sidebar screenshot to the redesigned UI, including the new provider groups.
+- Redesigned model rows: fewer chips (latency, change vs previous benchmark as an arrow, stale, confidence), with the measurement time and recent median moved to a quiet secondary line. Timestamps are now relative ("8 min ago") with the full date in a tooltip; confidence chips explain themselves in a tooltip.
+- Redesigned Health Sources: rows use a fixed grid (status dot, provider, status, link) so long incident descriptions wrap below the row instead of misaligning it. Incident text is clamped to two lines with the full text in a tooltip.
+- Removed the redundant "via GitHub Copilot" line from every model row; the provider group header already states it.
+- Removed activation events that VS Code generates automatically from contribution declarations.
+
 ## 1.0.2
 
 - Added global benchmark latency cache shared across VS Code workspaces.

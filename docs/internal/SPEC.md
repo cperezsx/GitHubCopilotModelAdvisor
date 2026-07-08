@@ -92,7 +92,10 @@ Status sources:
 - OpenAI: `https://status.openai.com/api/v2/summary.json`
 - Anthropic: `https://status.claude.com/api/v2/summary.json`
 - Google: `https://status.cloud.google.com/incidents.json`
+- Moonshot AI: `https://status.moonshot.cn/api/v2/summary.json`
 - GitHub Copilot service: `https://www.githubstatus.com/api/v2/summary.json`
+
+Microsoft AI (MAI) publishes no dedicated public status feed, and xAI's status page (status.x.ai) has no machine-readable API. Their models — like models whose provider cannot be inferred — fall back to GitHub Copilot service health, which is their delivery route.
 
 Google Cloud status has a different shape. v1 treats Google as operational when the feed is reachable and no active Gemini, Vertex AI, or generative AI incident is found.
 
@@ -137,7 +140,7 @@ Included:
 - Token-free health check.
 - Explicit TTFT latency benchmark.
 - Selected-model latency benchmark.
-- OpenAI, Anthropic, Google, and GitHub Copilot service status checks.
+- OpenAI, Anthropic, Google, Moonshot AI, and GitHub Copilot service status checks.
 - Provider status page links in the webview.
 - Collapsible model grouping by inferred model provider.
 - Duplicate display-entry collapse.
