@@ -11,8 +11,10 @@ permissions:
   contents: read
 
 jobs:
+  # Job name must stay "TypeScript check": the MainGeneral ruleset requires a
+  # status check with exactly this name before merging to main.
   check:
-    name: Type check and tests
+    name: TypeScript check
     runs-on: ubuntu-latest
 
     steps:
@@ -30,6 +32,23 @@ jobs:
 
       - name: Type check
         run: npm run check
+
+  test:
+    name: Tests and webview render
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Compile and run tests
         run: npm test
