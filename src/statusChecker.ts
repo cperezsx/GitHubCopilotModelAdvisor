@@ -5,6 +5,7 @@ const STATUS_URLS: Partial<Record<ServiceProvider, string>> = {
   openai: "https://status.openai.com/api/v2/summary.json",
   anthropic: "https://status.claude.com/api/v2/summary.json",
   google: "https://status.cloud.google.com/incidents.json",
+  moonshot: "https://status.moonshot.cn/api/v2/summary.json",
   "github-copilot": "https://www.githubstatus.com/api/v2/summary.json"
 };
 
@@ -126,6 +127,10 @@ function isRelevantComponent(provider: ServiceProvider, name: string): boolean {
     return normalized.includes("api") || normalized.includes("claude");
   }
 
+  if (provider === "moonshot") {
+    return normalized.includes("api") || normalized.includes("model");
+  }
+
   if (provider === "github-copilot") {
     return normalized.includes("copilot");
   }
@@ -180,6 +185,15 @@ function statusPageUrl(provider: ServiceProvider): string {
       return "https://status.claude.com/";
     case "google":
       return "https://status.cloud.google.com/";
+    case "moonshot":
+      return "https://status.moonshot.cn/";
+    // Microsoft AI (MAI) models publish no dedicated public status feed;
+    // their delivery route is GitHub Copilot, so that status page applies.
+    case "microsoft":
+      return "https://www.githubstatus.com/";
+    // xAI's status page has no machine-readable feed; link it for humans.
+    case "xai":
+      return "https://status.x.ai/";
     case "github-copilot":
       return "https://www.githubstatus.com/";
     case "unknown":

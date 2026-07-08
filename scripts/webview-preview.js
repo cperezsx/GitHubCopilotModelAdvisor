@@ -30,6 +30,7 @@ const status = (provider, statusPageUrl) => ({
 const openaiStatus = status("openai", "https://status.openai.com");
 const anthropicStatus = status("anthropic", "https://status.claude.com");
 const googleStatus = { ...status("google", "https://status.cloud.google.com"), status: "degraded_performance", incidents: ["Elevated latency on Gemini API"] };
+const moonshotStatus = status("moonshot", "https://status.moonshot.cn");
 const githubStatus = status("github-copilot", "https://www.githubstatus.com");
 
 const model = (id, name, provider, family) => ({
@@ -43,22 +44,28 @@ const model = (id, name, provider, family) => ({
   route: "github-copilot"
 });
 
-const rec = (m, latency, providerStatus, score, reason, recommended = false) => ({
+const rec = (m, latency, providerStatus, score, reason, recommended = false, confidence = { level: "high", reason: "Live latency and healthy provider status are both available." }) => ({
   model: m,
   latency,
   providerStatus,
   score,
   reason,
-  recommended
+  recommended,
+  confidence
 });
 
+const now = Date.now();
+
 const models = [
-  rec(model("claude-sonnet-4.5", "Claude Sonnet 4.5", "anthropic"), { status: "fast", latency: 412 }, anthropicStatus, 100, "Fast first token and operational provider.", true),
-  rec(model("claude-haiku-4.5", "Claude Haiku 4.5", "anthropic"), { status: "fast", latency: 388 }, anthropicStatus, 100, "Fast first token and operational provider."),
-  rec(model("gpt-4.1", "GPT-4.1", "openai"), { status: "fast", latency: 938 }, openaiStatus, 90, "Healthy provider with moderate first-token latency."),
-  rec(model("gpt-5-mini", "GPT-5 mini", "openai"), { status: "fast", latency: 612 }, openaiStatus, 100, "Fast first token and operational provider."),
-  rec(model("o4-mini", "o4-mini", "openai"), { status: "slow", latency: 2140 }, openaiStatus, 70, "Slow first token right now."),
-  rec(model("gemini-2.5-pro", "Gemini 2.5 Pro", "google"), { status: "fast", latency: 701 }, googleStatus, 50, "Provider reports degraded performance with an active incident.")
+  rec(model("claude-sonnet-5", "Claude Sonnet 5", "anthropic"), { status: "fast", latency: 412, checkedAt: now - 8 * 60000, latencyDelta: -120, medianLatency: 468, sampleCount: 4 }, anthropicStatus, 100, "Fast first token and operational provider.", true),
+  rec(model("claude-haiku-4.5", "Claude Haiku 4.5", "anthropic"), { status: "fast", latency: 388, checkedAt: now - 8 * 60000 }, anthropicStatus, 100, "Fast first token and operational provider."),
+  rec(model("gpt-4.1", "GPT-4.1", "openai"), { status: "fast", latency: 938, checkedAt: now - 3 * 3600000, source: "cache", isStale: true, medianLatency: 902, sampleCount: 3 }, openaiStatus, 80, "Healthy provider with moderate first-token latency.", false, { level: "low", reason: "Latency is cached but older than the configured cache window." }),
+  rec(model("gpt-5-mini", "GPT-5 mini", "openai"), { status: "fast", latency: 612, checkedAt: now - 8 * 60000, latencyDelta: 87 }, openaiStatus, 100, "Fast first token and operational provider."),
+  rec(model("o3-mini", "o3-mini", "openai"), { status: "slow", latency: 2140, checkedAt: now - 8 * 60000, latencyDelta: 460 }, openaiStatus, 70, "Slow first token right now."),
+  rec(model("gemini-2.5-pro", "Gemini 2.5 Pro", "google"), { status: "fast", latency: 701, checkedAt: now - 8 * 60000 }, googleStatus, 50, "Provider reports degraded performance with an active incident.", false, { level: "low", reason: "Recommendation depends on incomplete, stale, or degraded signals." }),
+  rec(model("kimi-k2.7-code", "Kimi K2.7 Code", "moonshot"), { status: "fast", latency: 655, checkedAt: now - 8 * 60000 }, moonshotStatus, 100, "Fast first token and operational provider."),
+  rec(model("mai-code-1-flash", "MAI-Code-1-Flash", "microsoft"), { status: "fast", latency: 301, checkedAt: now - 8 * 60000 }, githubStatus, 100, "Fast first token and healthy GitHub Copilot service."),
+  rec(model("grok-code-fast-1", "Grok Code Fast 1", "xai"), { status: "fast", latency: 289, checkedAt: now - 8 * 60000 }, githubStatus, 100, "Fast first token and healthy GitHub Copilot service.")
 ];
 
 const result = {
@@ -72,7 +79,7 @@ const result = {
     { label: "Medium", model: models[0].model, reason: "Balanced model with the best current signal." },
     { label: "Complex", model: models[2].model, reason: "Reasoning-capable model with the best current signal." }
   ],
-  providers: [openaiStatus, anthropicStatus, googleStatus, githubStatus],
+  providers: [openaiStatus, anthropicStatus, googleStatus, moonshotStatus, githubStatus],
   availabilityNotice: "Showing only GitHub Copilot models currently enabled for this user in VS Code.",
   tokenNotice: "Latency benchmark sends a tiny prompt to each model and uses about 5 GitHub Copilot tokens per model."
 };

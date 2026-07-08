@@ -660,7 +660,10 @@ function serviceProvidersForModels(models: ModelInfo[]): ServiceProvider[] {
   const providers = new Set<ServiceProvider>(["github-copilot"]);
 
   for (const model of models) {
-    if (model.provider !== "unknown") {
+    // Unknown, Microsoft (MAI), and xAI models have no machine-readable
+    // public status feed; their health rides on the always-included GitHub
+    // Copilot status.
+    if (model.provider !== "unknown" && model.provider !== "microsoft" && model.provider !== "xai") {
       providers.add(model.provider);
     }
   }
@@ -863,6 +866,12 @@ function providerLabel(provider: Provider): string {
       return "Anthropic";
     case "google":
       return "Google";
+    case "moonshot":
+      return "Moonshot AI";
+    case "microsoft":
+      return "Microsoft";
+    case "xai":
+      return "xAI";
     case "unknown":
       return "Unknown provider";
   }
@@ -876,9 +885,15 @@ function providerOrder(provider: string): number {
       return 1;
     case "Google":
       return 2;
-    case "GitHub":
+    case "Moonshot AI":
       return 3;
-    default:
+    case "Microsoft":
       return 4;
+    case "xAI":
+      return 5;
+    case "GitHub":
+      return 6;
+    default:
+      return 7;
   }
 }

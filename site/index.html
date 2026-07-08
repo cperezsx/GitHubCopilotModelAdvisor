@@ -290,7 +290,7 @@
   <div class="wrap">
 
     <section class="hero" aria-labelledby="hero-title">
-      <span class="badge"><span class="dot" aria-hidden="true"></span>VS Code extension · v1.0.2 · free</span>
+      <span class="badge"><span class="dot" aria-hidden="true"></span>VS Code extension · v1.1.0 · free</span>
       <h1 id="hero-title">Know which GitHub Copilot model to use, <em>before</em> you waste a prompt on it.</h1>
       <p class="sub">
         A model can be enabled for your account but slow right now — or its provider can be mid-outage.
@@ -314,7 +314,7 @@
         <div class="card">
           <span class="tag">zero tokens</span>
           <h3>Token-free health checks</h3>
-          <p>The default check never sends a prompt to any model. It reads public status feeds from OpenAI, Anthropic, Google, and GitHub, then scores every GitHub Copilot model enabled for your account.</p>
+          <p>The default check never sends a prompt to any model. It reads public status feeds from OpenAI, Anthropic, Google, Moonshot AI, and GitHub, then scores every GitHub Copilot model enabled for your account — including Kimi, Microsoft MAI, and xAI Grok models.</p>
         </div>
         <div class="card">
           <span class="tag">opt-in</span>
@@ -328,7 +328,7 @@
           <p>Every model starts at 100 and loses points for slow first tokens, stale cached latency, degraded providers, and active incidents. Confidence labels make uncertainty visible.</p>
           </div>
           <figure class="webview-shot">
-            <img src="assets/webview.png" alt="The Model Advisor sidebar: a recommended model card on top, a token-use notice, task-fit picks, and ranked model rows with latency chips and scores." width="776" height="3361" loading="lazy">
+            <img src="assets/webview.png" alt="The Model Advisor sidebar: a recommended model card on top, a token-use notice, task-fit picks, and ranked model rows with latency chips and scores." width="776" height="5300" loading="lazy">
           </figure>
         </div>
         <div class="card">
@@ -386,6 +386,9 @@
             <tr><td>OpenAI</td><td>status.openai.com</td></tr>
             <tr><td>Anthropic</td><td>status.claude.com</td></tr>
             <tr><td>Google</td><td>status.cloud.google.com</td></tr>
+            <tr><td>Moonshot AI (Kimi)</td><td>status.moonshot.cn</td></tr>
+            <tr><td>Microsoft (MAI)</td><td>githubstatus.com — no dedicated public feed, tracked via its delivery route</td></tr>
+            <tr><td>xAI (Grok)</td><td>githubstatus.com — no machine-readable feed, tracked via its delivery route</td></tr>
             <tr><td>GitHub Copilot service</td><td>githubstatus.com</td></tr>
           </tbody>
         </table>

@@ -2,7 +2,7 @@
 
 > Know which GitHub Copilot Chat model to use right now, without leaving VS Code.
 
-[![Version](https://img.shields.io/badge/version-1.0.2-68f0a7)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-68f0a7)](CHANGELOG.md)
 [![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.92-65d8e9)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-f3bb58)](LICENSE)
 
@@ -42,7 +42,7 @@ Being honest about what the extension can and cannot know:
 | What | Why it is reliable |
 | --- | --- |
 | Model list | Read directly from `vscode.lm.selectChatModels({ vendor: "copilot" })` — the official VS Code API. Always reflects your account, organization, and session. |
-| Provider health and incidents | Read from the same public status feeds the providers themselves maintain (OpenAI, Anthropic, Google, GitHub). When an incident is declared there, it appears here. |
+| Provider health and incidents | Read from the same public status feeds the providers themselves maintain (OpenAI, Anthropic, Google, Moonshot AI, GitHub). When an incident is declared there, it appears here. |
 | First-token latency (benchmark) | Measured by sending a tiny real prompt and cancelling the stream on the first chunk. As honest as latency measurement gets. |
 
 ### Heuristics and known gaps
@@ -101,6 +101,9 @@ Health signals come from public status feeds:
 | OpenAI | status.openai.com |
 | Anthropic | status.claude.com |
 | Google | status.cloud.google.com |
+| Moonshot AI (Kimi) | status.moonshot.cn |
+| Microsoft (MAI) | githubstatus.com — Microsoft AI publishes no dedicated public feed, so MAI models track their delivery route |
+| xAI (Grok) | githubstatus.com — status.x.ai has no machine-readable feed, so Grok models track their delivery route |
 | GitHub Copilot | githubstatus.com |
 
 ## Commands & Settings
@@ -129,6 +132,7 @@ Health signals come from public status feeds:
 - **Latency cache**: Cached benchmark results are shared across VS Code workspaces for this extension. The UI shows when the cached benchmark was measured, whether it is stale, median recent latency, and trend so you can decide whether to rerun it.
 - **Confidence**: Recommendations expose a confidence label. Live benchmark plus healthy provider is strongest; stale cache or degraded provider lowers confidence.
 - **Google precision**: Only declared Google Cloud incidents mentioning Gemini, Vertex AI, or generative AI are flagged.
+- **Microsoft (MAI) and xAI (Grok) health**: Neither publishes a machine-readable public status feed, so their model health follows the GitHub Copilot service status.
 - **Tokens**: Only explicit benchmarks use GitHub Copilot tokens. Health checks never do.
 
 ## Development

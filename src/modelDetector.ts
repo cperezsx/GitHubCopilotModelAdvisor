@@ -38,6 +38,20 @@ function isAutoRoutingEntry(model: vscode.LanguageModelChat): boolean {
 export function providerFromModel(name: string, family: string, id: string): Provider {
   const normalized = `${name} ${family} ${id}`.toLowerCase();
 
+  // Microsoft and Moonshot go first: their names ("MAI-Code-1-Flash",
+  // "Kimi K2.7 Code") must not fall through to broader token matches.
+  if (containsAny(normalized, ["mai-", "microsoft", "phi-"]) || /\bmai\b/.test(normalized)) {
+    return "microsoft";
+  }
+
+  if (containsAny(normalized, ["kimi", "moonshot"]) || /\bk[1-9](\.[0-9]+)?\b/.test(normalized)) {
+    return "moonshot";
+  }
+
+  if (containsAny(normalized, ["grok", "xai"])) {
+    return "xai";
+  }
+
   if (
     containsAny(normalized, ["gpt", "openai", "codex"]) ||
     /\bo[1-9]\b/.test(normalized)
@@ -91,8 +105,14 @@ function providerRank(provider: Provider): number {
       return 1;
     case "google":
       return 2;
-    case "unknown":
+    case "moonshot":
       return 3;
+    case "microsoft":
+      return 4;
+    case "xai":
+      return 5;
+    case "unknown":
+      return 6;
   }
 }
 

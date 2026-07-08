@@ -1,4 +1,4 @@
-export type Provider = "openai" | "anthropic" | "google" | "unknown";
+export type Provider = "openai" | "anthropic" | "google" | "moonshot" | "microsoft" | "xai" | "unknown";
 export type ServiceProvider = Provider | "github-copilot";
 export type LatencySource = "live" | "cache";
 export type LatencyTrend = "faster" | "slower" | "stable";

@@ -89,6 +89,8 @@ function isAllowedExternalUri(uri: vscode.Uri): boolean {
     "status.openai.com",
     "status.claude.com",
     "status.cloud.google.com",
+    "status.moonshot.cn",
+    "status.x.ai",
     "www.githubstatus.com"
   ]).has(uri.authority.toLowerCase());
 }
@@ -307,16 +309,35 @@ export function getHtml(state: ViewState, nonce: string): string {
     }
 
     .provider-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
       align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      column-gap: 8px;
       padding: 9px 0;
       border-bottom: 1px solid var(--border-soft);
     }
 
     .provider-row:last-child {
       border-bottom: 0;
+    }
+
+    .provider-name {
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .provider-incident {
+      grid-column: 2 / -1;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .model-main {
@@ -343,7 +364,16 @@ export function getHtml(state: ViewState, nonce: string): string {
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
-      margin-top: 2px;
+      margin-top: 4px;
+    }
+
+    .model-detail {
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .chip {
@@ -733,14 +763,16 @@ function renderBody(state: ViewState): string {
   const providers = result.providers
     .slice()
     .sort((left, right) => providerOrder(left.provider) - providerOrder(right.provider))
-    .map((provider) => `<div class="provider-row">
-      <span>
-        ${escapeHtml(providerLabel(provider.provider))}
-        ${provider.incidents.length > 0 ? `<span class="provider-subtitle">${escapeHtml(provider.incidents.join(" | "))}</span>` : ""}
-      </span>
-      <span class="badge"><span class="dot ${statusClass(provider.status)}"></span>${escapeHtml(statusLabel(provider.status))}</span>
+    .map((provider) => {
+      const incidents = provider.incidents.join(" | ");
+      return `<div class="provider-row">
+      <span class="dot ${statusClass(provider.status)}"></span>
+      <span class="provider-name">${escapeHtml(providerLabel(provider.provider))}</span>
+      <span class="badge">${escapeHtml(statusLabel(provider.status))}</span>
       <button class="link-button" data-command="openExternal" data-url="${escapeHtml(provider.statusPageUrl)}">Status page</button>
-    </div>`)
+      ${incidents ? `<div class="provider-incident" title="${escapeHtml(incidents)}">${escapeHtml(incidents)}</div>` : ""}
+    </div>`;
+    })
     .join("");
 
   return `${summary}
@@ -791,13 +823,13 @@ function renderModelGroups(result: AdvisorResult): string {
             <div class="model-main">
               <div class="model-name">${escapeHtml(item.model.name)}</div>
               <div class="model-meta">
-                <span>${escapeHtml(providerMeta(item.model.provider))}</span>
                 <span class="chip ${latencyChipClass(item.latency)}">${escapeHtml(latencyLabel(item.latency))}</span>
-                <span class="chip ${confidenceChipClass(item.confidence.level)}">${escapeHtml(confidenceLabel(item.confidence.level))}</span>
-                ${item.latency.checkedAt ? `<span class="chip">${escapeHtml(benchmarkTimeLabel(item.latency.checkedAt))}</span>` : ""}
-                ${latencyExtraChips(item.latency)}
+                ${latencyDeltaChip(item.latency)}
+                ${item.latency.isStale ? `<span class="chip warn" title="Older than the configured cache window">stale</span>` : ""}
+                <span class="chip ${confidenceChipClass(item.confidence.level)}" title="${escapeHtml(item.confidence.reason)}">${escapeHtml(confidenceLabel(item.confidence.level))}</span>
                 ${selectedBenchmarked ? `<span class="chip good">benchmarked</span>` : ""}
               </div>
+              ${latencyDetailLine(item.latency)}
               <div class="reason">${escapeHtml(item.reason)}</div>
             </div>
             <div class="score-wrap">
@@ -904,27 +936,68 @@ function latencyLabel(latency: AdvisorResult["models"][number]["latency"]): stri
   return `${latency.latency} ms`;
 }
 
-function latencyExtraChips(latency: AdvisorResult["models"][number]["latency"]): string {
-  const chips: string[] = [];
-
-  if (latency.isStale) {
-    chips.push(`<span class="chip warn">stale</span>`);
-  }
-
+// One compact chip for the change vs the previous benchmark: the arrow
+// carries the faster/slower meaning, so no separate trend chip is needed.
+function latencyDeltaChip(latency: AdvisorResult["models"][number]["latency"]): string {
   if (latency.latencyDelta !== undefined) {
-    const label = `${latency.latencyDelta >= 0 ? "+" : ""}${latency.latencyDelta} ms`;
-    chips.push(`<span class="chip ${latency.latencyDelta <= 0 ? "good" : "warn"}">${escapeHtml(label)}</span>`);
+    const delta = latency.latencyDelta;
+    const label = delta < 0 ? `▼ ${-delta} ms` : delta > 0 ? `▲ ${delta} ms` : "± 0 ms";
+    const cls = delta < 0 ? "good" : delta > 0 ? "warn" : "";
+    return `<span class="chip ${cls}" title="Change vs previous benchmark">${escapeHtml(label)}</span>`;
   }
 
-  if (latency.trend) {
-    chips.push(`<span class="chip ${trendChipClass(latency.trend)}">${escapeHtml(latency.trend)}</span>`);
+  if (latency.trend && latency.trend !== "stable") {
+    return `<span class="chip ${trendChipClass(latency.trend)}" title="Trend across recent benchmarks">${escapeHtml(latency.trend)}</span>`;
+  }
+
+  return "";
+}
+
+// Secondary facts (when it was measured, recent median) belong in one quiet
+// text line instead of competing with the signal chips above.
+function latencyDetailLine(latency: AdvisorResult["models"][number]["latency"]): string {
+  const parts: string[] = [];
+
+  if (latency.checkedAt) {
+    parts.push(`Measured ${relativeTimeLabel(latency.checkedAt)}`);
   }
 
   if (latency.medianLatency !== undefined && latency.sampleCount && latency.sampleCount > 1) {
-    chips.push(`<span class="chip">median ${latency.medianLatency} ms</span>`);
+    parts.push(`median ${latency.medianLatency} ms over ${latency.sampleCount} runs`);
   }
 
-  return chips.join("");
+  if (parts.length === 0) {
+    return "";
+  }
+
+  const tooltip = latency.checkedAt ? ` title="Measured ${escapeHtml(formatDateTime(latency.checkedAt))}"` : "";
+  return `<div class="model-detail"${tooltip}>${escapeHtml(parts.join(" · "))}</div>`;
+}
+
+function relativeTimeLabel(timestamp: number): string {
+  const minutes = Math.round((Date.now() - timestamp) / 60000);
+
+  if (minutes < 1) {
+    return "just now";
+  }
+
+  if (minutes < 60) {
+    return `${minutes} min ago`;
+  }
+
+  const hours = Math.round(minutes / 60);
+
+  if (hours < 24) {
+    return `${hours} h ago`;
+  }
+
+  const days = Math.round(hours / 24);
+
+  if (days < 7) {
+    return `${days} d ago`;
+  }
+
+  return `on ${new Date(timestamp).toLocaleDateString()}`;
 }
 
 function trendChipClass(trend: NonNullable<AdvisorResult["models"][number]["latency"]["trend"]>): string {
@@ -953,10 +1026,6 @@ function confidenceChipClass(level: AdvisorResult["models"][number]["confidence"
   }
 
   return "";
-}
-
-function benchmarkTimeLabel(timestamp: number): string {
-  return `measured ${formatDateTime(timestamp)}`;
 }
 
 function formatDateTime(timestamp: number): string {
@@ -1003,6 +1072,12 @@ function providerLabel(provider: AdvisorResult["models"][number]["model"]["provi
       return "Anthropic";
     case "google":
       return "Google";
+    case "moonshot":
+      return "Moonshot AI";
+    case "microsoft":
+      return "Microsoft";
+    case "xai":
+      return "xAI";
     case "unknown":
       return "Unknown provider";
     case "github-copilot":
@@ -1010,13 +1085,17 @@ function providerLabel(provider: AdvisorResult["models"][number]["model"]["provi
   }
 }
 
-function providerMeta(provider: AdvisorResult["models"][number]["model"]["provider"]): string {
-  return provider === "unknown" ? "Unknown provider via GitHub Copilot" : `${providerLabel(provider)} via GitHub Copilot`;
-}
-
 function providerGroupSubtitle(provider: AdvisorResult["models"][number]["model"]["provider"]): string {
   if (provider === "unknown") {
     return "Provider not inferred, delivered by GitHub Copilot";
+  }
+
+  if (provider === "microsoft") {
+    return "Microsoft AI models, health tracked via GitHub Copilot status";
+  }
+
+  if (provider === "xai") {
+    return "xAI models, health tracked via GitHub Copilot status";
   }
 
   return `${providerLabel(provider)} models delivered through GitHub Copilot`;
@@ -1030,10 +1109,16 @@ function providerOrder(provider: AdvisorResult["models"][number]["model"]["provi
       return 1;
     case "google":
       return 2;
-    case "unknown":
+    case "moonshot":
       return 3;
-    case "github-copilot":
+    case "microsoft":
       return 4;
+    case "xai":
+      return 5;
+    case "unknown":
+      return 6;
+    case "github-copilot":
+      return 7;
   }
 }
 
